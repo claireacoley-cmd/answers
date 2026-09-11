@@ -1,0 +1,16 @@
+{
+  "name": "answers-cms",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Frictionless writing + GEO/AEO-optimised publishing for clairecoley.com/answers",
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev",
+    "test": "node test/run.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.0.3",
+    "@netlify/functions": "^6.0.0",
+    "marked": "^18.0.12"
+  }
+}

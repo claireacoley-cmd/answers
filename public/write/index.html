@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Write — Claire Coley</title>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/write/app.css">
+</head>
+<body>
+
+<!-- Login -->
+<section id="login" class="login" hidden>
+  <form id="loginForm">
+    <div class="masthead">Claire Coley</div>
+    <label class="m sec">Password</label>
+    <input type="password" id="password" autocomplete="current-password" autofocus>
+    <button type="submit" class="m strong">Enter →</button>
+    <p id="loginError" class="m err" hidden></p>
+  </form>
+</section>
+
+<div id="app" class="app" hidden>
+
+  <header class="head">
+    <div class="masthead" id="masthead">Claire Coley</div>
+    <nav class="steps m" id="steps">
+      <button data-step="write"><span class="n">01</span><span class="w">Write</span></button>
+      <button data-step="edit"><span class="n">02</span><span class="w">Edit</span></button>
+      <button data-step="publish"><span class="n">03</span><span class="w">Publish</span></button>
+    </nav>
+  </header>
+  <div class="rule"></div>
+  <div class="folio m sec" id="folio"></div>
+
+  <!-- Left rail -->
+  <aside class="rail m">
+    <button class="link" id="btnDrafts">Drafts</button>
+    <div class="sec" id="draftCount">0</div>
+    <button class="link group" id="btnQuestions">Questions</button>
+    <div class="sec" id="qCount">0 / 0</div>
+    <button class="link group" id="btnRefs">References</button>
+    <div class="sec" id="refCount">0 notes</div>
+    <button class="link group" id="btnPrompt">Prompt</button>
+    <div class="sec">Before you write</div>
+    <button class="link util" id="btnSettings">Settings</button>
+    <button class="link util" id="btnLogout">Log out</button>
+  </aside>
+  <div class="divider"></div>
+
+  <!-- 01 Write -->
+  <main id="view-write" class="view">
+    <div class="ms">
+      <textarea id="title" class="title" rows="1" placeholder="Title" spellcheck="true" lang="en-GB"></textarea>
+      <div id="body" class="body"></div>
+      <div class="fmt m sec"><button class="link" data-fmt="bold" title="⌘B"><b>Bold</b></button><button class="link" data-fmt="italic" title="⌘I"><i>Italic</i></button><button class="link" data-fmt="link" title="⌘K">Link</button><span>⌘B · ⌘I · ⌘K</span></div>
+    </div>
+  </main>
+
+  <!-- 02 Edit -->
+  <main id="view-edit" class="view" hidden>
+    <div class="ms">
+      <div id="editTitle" class="title read"></div>
+      <div id="editBody" class="body read"></div>
+      <button class="link m sec" id="backToWrite" style="margin-top: 32px;">← Back to writing</button>
+    </div>
+    <aside class="side">
+      <div class="scoreRow"><span id="scoreNum" class="score">–</span><span class="m sec" id="scoreNote"></span></div>
+      <div class="m">Suggest</div>
+      <div class="sugBtns" id="sugBtns">
+        <button class="m link strong" data-kind="subheads">Subheads</button>
+        <button class="m link strong" data-kind="tldr">TL;DR</button>
+        <button class="m link strong" data-kind="faq">FAQ</button>
+        <button class="m link strong" data-kind="meta">Meta</button>
+        <span class="brk"></span>
+        <button class="m link strong" data-kind="titles">Titles</button>
+        <button class="m link strong" data-kind="review">Notes</button>
+        <button class="m link strong" id="btnProofread">Proofread</button>
+      </div>
+      <div id="aiOff" class="m sec" hidden>Add an Anthropic key in Netlify to enable suggestions.</div>
+      <div id="suggestions"></div>
+      <div id="proofList"></div>
+      <div class="m">What would help</div>
+      <div id="checks" class="checks"></div>
+      <div class="field"><label class="m">Address</label><div class="m addr"><span id="addrHost"></span><input id="slug" class="mono-in" placeholder="from-the-title"></div></div>
+      <div class="field"><label class="m">Meta description <span class="sec" id="metaCount"></span></label><textarea id="metaDescription" rows="3" class="txt" spellcheck="true" lang="en-GB"></textarea></div>
+      <div class="field"><label class="m">Tags</label><input id="tags" class="txt" placeholder="comma, separated"></div>
+    </aside>
+  </main>
+
+  <!-- 03 Publish -->
+  <main id="view-publish" class="view" hidden>
+    <div class="ms">
+      <div class="m sec" id="pubStatus">Goes to</div>
+      <div class="title read" id="pubAddress"></div>
+      <div class="body read" id="pubNote">Schema, meta, sitemap and feed are handled. Search engines are pinged.</div>
+      <div class="row">
+        <button id="btnPublish" class="m strong red">Publish</button>
+        <a id="viewLive" class="m link strong" target="_blank" hidden>View it →</a>
+        <button id="btnUnpublish" class="m link sec" hidden>Unpublish</button>
+        <button id="btnDelete" class="m link sec">Delete</button>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="scoreRow"><span id="offNum" class="score">–</span><span class="m sec">Off-page done</span></div>
+      <div class="m" style="margin-bottom: 6px;">Off-page</div>
+      <ul id="offpage" class="offpage"></ul>
+    </aside>
+  </main>
+
+  <footer class="foot m">
+    <span></span>
+    <span class="status"><span id="wordCount" class="sec">Words · 0</span><span id="saveState" class="sec">Saved as you type</span><span id="folioFoot" class="sec"></span></span>
+    <button id="btnNext" class="link strong">Done →</button>
+  </footer>
+
+  <!-- Pull-out panel (references / drafts / settings) -->
+  <aside id="panel" class="panel" hidden>
+    <div class="panelHead m"><span class="strong" id="panelTitle"></span><button class="link sec" id="panelClose">Close</button></div>
+    <div id="panelBody"></div>
+  </aside>
+
+  <div id="toast" class="toast m" hidden></div>
+</div>
+
+<script src="/write/editor.js"></script>
+<script src="/write/app.js"></script>
+</body>
+</html>
