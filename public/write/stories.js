@@ -94,11 +94,25 @@
   }
   function scrollPane() { if (window.innerWidth <= 1100) $('#storyPane').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 
+  // Slow jobs run in the background on Netlify; we poll for the result.
+  async function runJob(name, body, label) {
+    const started = Date.now();
+    await api(`/api/story-jobs/${name}`, { method: 'POST', body });
+    toast(`${label}… this can take a minute.`, 4000);
+    for (let i = 0; i < 100; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const jobs = await api('/api/stories/jobs');
+      const j = jobs[name];
+      if (j && Date.parse(j.at) >= started - 5000 && j.status === 'done') return j.result;
+      if (j && Date.parse(j.at) >= started - 5000 && j.status === 'error') throw new Error(j.error || 'Job failed');
+    }
+    throw new Error('Still running — try again in a minute.');
+  }
   async function action(act) {
     if (act === 'new' || act === 'lead') { const s = await api('/api/stories', { method: 'POST', body: { title: act === 'lead' ? 'New lead' : 'New story', kind: act === 'lead' ? 'lead' : 'story' } }); await load(); ST.open = s.id; ST.mode = 'edit'; renderList(); renderPane(); scrollPane(); setTimeout(() => $('#storyPane [data-k="title"]')?.select(), 60); }
     if (act === 'talk') { ST.open = null; ST.mode = 'talk'; ST.talk = { messages: [], busy: false }; renderPane(); scrollPane(); }
     if (act === 'ingest') { ST.open = null; ST.mode = 'ingest'; renderPane(); scrollPane(); }
-    if (act === 'patterns') { toast('Reading the bank…', 4000); try { ST.data.patterns = await api('/api/story-ai/patterns', { method: 'POST', body: { goal: S.questions?.goal || [] } }); ST.open = null; ST.mode = 'patterns'; renderList(); renderPane(); } catch (e) { toast(e.message, 5000); } }
+    if (act === 'patterns') { ST.open = null; ST.mode = 'patterns'; ST.patternsBusy = true; renderPane(); try { ST.data.patterns = await runJob('patterns', { goal: S.questions?.goal || [] }, 'Reading the bank'); } catch (e) { toast(e.message, 6000); } ST.patternsBusy = false; renderList(); renderPane(); }
   }
 
   // ---------- Pane: editor / talk / ingest / patterns ----------
@@ -215,7 +229,7 @@
     pane.innerHTML = html;
     pane.querySelector('[data-act="back"]').onclick = () => { ST.mode = null; renderPane(); };
     const form = pane.querySelector('form.ingest');
-    if (form) form.onsubmit = async (e) => { e.preventDefault(); ST.ingest = { busy: true }; renderIngest(pane); try { const r = await api('/api/story-ai/ingest', { method: 'POST', body: { text: form.text.value, source: form.source.value || 'Pasted document' } }); ST.ingest = r; } catch (err) { toast(err.message, 6000); ST.ingest = null; } renderIngest(pane); };
+    if (form) form.onsubmit = async (e) => { e.preventDefault(); const text = form.text.value, source = form.source.value || 'Pasted document'; ST.ingest = { busy: true }; renderIngest(pane); try { ST.ingest = await runJob('ingest', { text, source }, 'Reading the document'); } catch (err) { toast(err.message, 6000); ST.ingest = null; } renderIngest(pane); };
     const accept = async (c) => {
       if (c.sameAs && byId(c.sameAs)) { const s = byId(c.sameAs); const patch = {}; for (const [k, v] of Object.entries(c.fields || {})) if (v) { patch[k] = (s[k] || '').trim() ? `${s[k].trim()}\n\n${v}` : v; } patch.followups = [...(s.followups || []), ...(c.followups || [])]; patch.sourceRef = [s.sourceRef, c.sourceRef].filter(Boolean).join(' · '); await api(`/api/stories/${s.id}`, { method: 'PUT', body: patch }); }
       else await api('/api/stories', { method: 'POST', body: { ...(c.fields || {}), title: c.title, kind: c.kind || 'story', source: I.source, sourceRef: c.sourceRef || '', territories: c.territories || [], followups: c.followups || [], relatedQuestions: c.relatedQuestions || [], newQuestions: c.newQuestions || [] } });
@@ -227,6 +241,7 @@
   }
 
   function renderPatterns(pane) {
+    if (ST.patternsBusy) { pane.innerHTML = `<div class="sPaneHead"><span class="m sec">Patterns</span></div><div class="m sec">Reading every story against the thesis and the question bank… about a minute.</div>`; return; }
     const P = ST.data.patterns || {};
     const list = (arr) => arr.length ? arr.map((x) => `<div class="q lnk"><span class="n">·</span><span><span class="t">${esc(x.text)}</span><span class="st">${(x.ids || []).map((id) => `<button class="link" data-open="${id}">${id}</button>`).join(' ')}</span></span></div>`).join('') : '<div class="m sec">None found.</div>';
     pane.innerHTML = `<div class="sPaneHead"><span class="m sec">Patterns · ${P.at ? fmtDate(P.at) : ''}</span><button class="link sec m" data-act="back">Close</button></div><div class="sBlock"><div class="m">Recurring patterns</div>${list(P.patterns || [])}</div><div class="sBlock"><div class="m">Contradictions</div>${list(P.contradictions || [])}</div><div class="sBlock"><div class="m">MVP questions with thin evidence</div>${(P.thinMvp || []).length ? P.thinMvp.map((n) => `<div class="q lnk"><span class="n">${n}</span><span><span class="t">${esc(qText(n))}</span></span></div>`).join('') : '<div class="m sec">None.</div>'}</div>`;

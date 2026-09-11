@@ -28,8 +28,9 @@ export default requireAuth(async (req, context) => {
   const doc = await loadStories();
 
   if (req.method === 'GET') {
+    if (id === 'jobs') return json(doc.jobs || {});
     if (id) { const s = doc.items.find((x) => x.id === id); return s ? json(s) : error('Not found', 404); }
-    return json({ items: doc.items, summary: summary(doc), matches: doc.matches, note: doc.note, fields: FIELDS, territories: TERRITORIES, privacy: PRIVACY });
+    return json({ items: doc.items, summary: summary(doc), matches: doc.matches, patterns: doc.patterns || null, jobs: doc.jobs || {}, note: doc.note, fields: FIELDS, territories: TERRITORIES, privacy: PRIVACY });
   }
 
   if (req.method === 'POST' && !id) {
