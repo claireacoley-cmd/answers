@@ -15,7 +15,7 @@ async function purge(tags) {
   }
 }
 
-const EDITABLE = ['title', 'slug', 'body', 'metaDescription', 'tags', 'coverImage', 'coverAlt', 'canonical', 'offpage'];
+const EDITABLE = ['title', 'slug', 'body', 'metaDescription', 'tags', 'coverImage', 'coverAlt', 'canonical', 'offpage', 'evidence'];
 
 async function uniqueSlug(base, id) {
   let slug = base || 'untitled';

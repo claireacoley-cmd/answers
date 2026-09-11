@@ -1,4 +1,6 @@
-// Export everything as JSON (posts + settings + inspo) or one post as Markdown with front matter.
+import { getStore } from '@netlify/blobs';
+import { loadStories } from '../../lib/stories-store.mjs';
+// Export everything as JSON (posts + settings + inspo + questions + private stories — auth-only) or one post as Markdown with front matter.
 // Use this when you fold /answers into the full site build.
 import { requireAuth } from '../../lib/auth.mjs';
 import { json, error, text } from '../../lib/http.mjs';
@@ -26,9 +28,9 @@ export default requireAuth(async (req, context) => {
       'content-type': 'text/markdown; charset=utf-8',
     });
   }
-  const [posts, settings, inspo] = await Promise.all([listPosts(), getSettings(), listTemplates()]);
+  const [posts, settings, inspo, questions, stories] = await Promise.all([listPosts(), getSettings(), listTemplates(), getStore({ name: 'questions', consistency: 'strong' }).get('list', { type: 'json' }), loadStories()]);
   return json(
-    { exportedAt: new Date().toISOString(), settings, posts: posts.map((p) => ({ ...p, markdown: frontMatter(p) })), inspo },
+    { exportedAt: new Date().toISOString(), settings, posts: posts.map((p) => ({ ...p, markdown: frontMatter(p) })), inspo, questions, stories: stories.items },
     200,
     { 'content-disposition': 'attachment; filename="answers-export.json"' },
   );

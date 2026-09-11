@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Write — Claire Coley</title>
 <link rel="stylesheet" href="/fonts/fonts.css">
-<link rel="stylesheet" href="/write/app.css">
+<link rel="stylesheet" href="/write/app.css?v=4">
 </head>
 <body>
 
@@ -25,6 +25,7 @@
 
   <header class="head">
     <div class="masthead" id="masthead">Claire Coley</div>
+    <button class="menuBtn m" id="menuBtn" aria-label="Menu">Menu</button>
     <nav class="steps m" id="steps">
       <button data-step="write"><span class="n">01</span><span class="w">Write</span></button>
       <button data-step="edit"><span class="n">02</span><span class="w">Edit</span></button>
@@ -44,6 +45,8 @@
     <div class="sec" id="refCount">0 notes</div>
     <button class="link group" id="btnPrompt">Prompt</button>
     <div class="sec">Before you write</div>
+    <button class="link group" id="btnStories">Stories</button>
+    <div class="sec" id="storyCount">Private</div>
     <button class="link util" id="btnSettings">Settings</button>
     <button class="link util" id="btnLogout">Log out</button>
   </aside>
@@ -83,6 +86,7 @@
       <div id="proofList"></div>
       <div class="m">What would help</div>
       <div id="checks" class="checks"></div>
+      <div id="evidence" class="evidence"></div>
       <div class="field"><label class="m">Address</label><div class="m addr"><span id="addrHost"></span><input id="slug" class="mono-in" placeholder="from-the-title"></div></div>
       <div class="field"><label class="m">Meta description <span class="sec" id="metaCount"></span></label><textarea id="metaDescription" rows="3" class="txt" spellcheck="true" lang="en-GB"></textarea></div>
       <div class="field"><label class="m">Tags</label><input id="tags" class="txt" placeholder="comma, separated"></div>
@@ -109,6 +113,12 @@
     </aside>
   </main>
 
+  <!-- Stories (private) -->
+  <main id="view-stories" class="view stories" hidden>
+    <div class="ms" id="storyList"></div>
+    <aside class="side storySide" id="storyPane"></aside>
+  </main>
+
   <footer class="foot m">
     <span></span>
     <span class="status"><span id="wordCount" class="sec">Words · 0</span><span id="saveState" class="sec">Saved as you type</span><span id="folioFoot" class="sec"></span></span>
@@ -124,7 +134,8 @@
   <div id="toast" class="toast m" hidden></div>
 </div>
 
-<script src="/write/editor.js"></script>
-<script src="/write/app.js"></script>
+<script src="/write/editor.js?v=4"></script>
+<script src="/write/app.js?v=4"></script>
+<script src="/write/stories.js?v=4"></script>
 </body>
 </html>

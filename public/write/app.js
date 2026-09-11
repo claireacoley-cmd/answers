@@ -39,6 +39,7 @@
     $('#aiOff').hidden = me.hasAi;
     $$('#sugBtns [data-kind]').forEach((b) => (b.disabled = !me.hasAi, b.style.opacity = me.hasAi ? '' : '0.3'));
     renderRail();
+    if (window.Stories) window.Stories.load().catch(() => {});
     const last = localStorage.getItem('write:lastPost');
     if (last && S.posts.some((p) => p.id === last)) await openPost(last);
     else if (S.posts.length) await openPost(S.posts[0].id);
@@ -52,10 +53,10 @@
     if (!S.post) return;
     await flushSave();
     if (step !== 'write' && !el.title.value.trim() && !el.body.value.trim()) { toast('Write something first.'); return; }
-    S.step = step;
+    S.step = step; S.inStories = false; document.body.classList.remove('inStories');
     $$('#steps button').forEach((b) => { b.classList.toggle('active', b.dataset.step === step); });
     $$('.view').forEach((v) => (v.hidden = v.id !== `view-${step}`));
-    $('#folio').hidden = step !== 'write';
+    $('#folio').hidden = step !== 'write'; $('#btnNext').hidden = false;
     $('#btnNext').textContent = step === 'write' ? 'Done →' : step === 'edit' ? 'Ready to publish →' : 'Write another →';
     if (step === 'edit') renderEdit();
     if (step === 'publish') renderPublish();
@@ -136,6 +137,7 @@
     try { const { html } = await api(`/api/posts/${S.post.id}/preview`); $('#editBody').innerHTML = html; }
     catch { $('#editBody').textContent = el.body.value; }
     analyse();
+    if (window.Stories) window.Stories.renderEvidence();
   }
   const analyseSoon = debounce(analyse, 900);
   async function analyse() {
@@ -445,5 +447,11 @@
     $('#panelBody form').onsubmit = async (e) => { e.preventDefault(); S.settings = await api('/api/settings', { method: 'PUT', body: Object.fromEntries(new FormData(e.target).entries()) }); $('#masthead').textContent = S.settings.authorName || S.settings.siteName; toast('Settings saved.'); closePanel(); };
   });
 
+  // ---------- Mobile menu (the rail as a sheet) ----------
+  $('#menuBtn').addEventListener('click', () => document.body.classList.toggle('menuOpen'));
+  $$('.rail button').forEach((b) => b.addEventListener('click', () => document.body.classList.remove('menuOpen')));
+
+  // Bridge for stories.js
+  window.__app = { $, $$, api, esc, toast, go, openPost, newPost, startQuestion, setBody, el, renderRail, openPanel, closePanel, flushSave, markDirty, updateCounts, snapToGrid, qDone, S };
   boot().catch((e) => { console.error(e); showLogin(); });
 })();
