@@ -3,7 +3,8 @@
 import { getStore } from '@netlify/blobs';
 import { requireAuth } from '../../lib/auth.mjs';
 import { json, error, readJson } from '../../lib/http.mjs';
-import { QUESTIONS_SEED, QUESTIONS_GOAL, QUESTIONS_VERSION } from '../../lib/questions-seed.mjs';
+import { QUESTIONS_SEED, QUESTIONS_GOAL, QUESTIONS_VERSION, PUBLISHED_MAP } from '../../lib/questions-seed.mjs';
+import { listPublished } from '../../lib/store.mjs';
 
 const store = () => getStore({ name: 'questions', consistency: 'strong' });
 const norm = (s) => (s || '').toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -35,12 +36,31 @@ function migrate(old) {
   return doc;
 }
 
+// Tick questions that have a published post, even when the post title drifted from the question.
+// Explicit slug map first; then a conservative word-overlap match on title vs question.
+const STOP = new Set(['what','when','how','does','do','the','a','an','of','to','in','is','it','its','and','or','that','than','should','company','companys','business','you','your','be','can','with','for','who','which','their','them','they','are','vs','rather']);
+const keywords = (t) => new Set(norm(t).split(' ').filter((w) => w.length > 2 && !STOP.has(w)));
+function kwSim(a, b) { const A = keywords(a), B = keywords(b); if (!A.size || !B.size) return 0; let i = 0; for (const w of A) if (B.has(w)) i++; return i / Math.min(A.size, B.size); }
+export async function syncPublished(doc) {
+  let changed = 0;
+  let posts = [];
+  try { posts = await listPublished(); } catch { return 0; }
+  const linked = new Set(doc.items.map((q) => q.postId).filter(Boolean));
+  for (const post of posts) {
+    if (linked.has(post.id)) { const q = doc.items.find((x) => x.postId === post.id); if (q && !q.done) { q.done = true; changed++; } continue; }
+    let q = PUBLISHED_MAP[post.slug] ? doc.items.find((x) => x.n === PUBLISHED_MAP[post.slug]) : null;
+    if (!q) { let best = null, bs = 0.75; for (const x of doc.items) { if (x.postId) continue; const sc = Math.max(kwSim(x.text, post.title || ''), kwSim(x.text, (post.slug || '').replace(/-/g, ' '))); if (sc > bs) { best = x; bs = sc; } } q = best; }
+    if (q && !q.postId) { q.postId = post.id; q.done = true; linked.add(post.id); changed++; }
+  }
+  return changed;
+}
+
 async function load() {
   let doc = await store().get('list', { type: 'json' });
   if (!doc) { doc = fresh(); await store().setJSON('list', doc); return doc; }
   if ((doc.version || 1) < QUESTIONS_VERSION) {
     await store().setJSON(`backup-v${doc.version || 1}`, doc); // keep the old list, just in case
-    doc = migrate(doc); await store().setJSON('list', doc); return doc;
+    doc = migrate(doc); await syncPublished(doc); await store().setJSON('list', doc); return doc;
   }
   // merge in any seed questions added since the list was created (never overwrites edits or ticks)
   const have = new Map(doc.items.map((i) => [i.n, i]));
@@ -59,6 +79,12 @@ export default requireAuth(async (req, context) => {
   const doc = await load();
 
   if (req.method === 'GET') return json(doc);
+
+  if (req.method === 'POST' && n === 'sync') {
+    const changed = await syncPublished(doc);
+    if (changed) await save(doc);
+    return json({ changed, ...doc });
+  }
 
   if (req.method === 'POST' && n === 'reorder') {
     // body: { ns: [n, n, ...] } — the MVP list in the wanted order; everything listed becomes MVP

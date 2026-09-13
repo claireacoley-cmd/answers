@@ -317,7 +317,7 @@
   }
 
   // ---------- Questions ----------
-  $('#btnQuestions').addEventListener('click', renderQuestions);
+  $('#btnQuestions').addEventListener('click', async () => { renderQuestions(); try { const r = await api('/api/questions/sync', { method: 'POST' }); if (r.changed) { S.questions = r; S.qNext = null; renderRail(); renderQuestions(); toast(`${r.changed} question${r.changed === 1 ? '' : 's'} ticked from published posts.`); } } catch {} });
   function qPost(q) { return q.postId ? S.posts.find((x) => x.id === q.postId) : null; }
   function qDone(q) { const p = qPost(q); return q.done || (p && p.status === 'published'); }
   function qStatus(q) {
